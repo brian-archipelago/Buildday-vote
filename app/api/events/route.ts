@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { store } from "@/lib/store";
+import { publicState, store } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       };
 
       // initial snapshot
-      send(store.state);
+      send(publicState());
 
       const onUpdate = (state: unknown) => send(state);
       store.emitter.on("update", onUpdate);

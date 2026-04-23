@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bg-aurora {
+  background-image:
+    radial-gradient(1200px 800px at 10% 10%, rgba(124, 58, 237, 0.35), transparent 60%),
+    radial-gradient(1000px 700px at 90% 20%, rgba(236, 72, 153, 0.30), transparent 60%),
+    radial-gradient(1100px 900px at 50% 100%, rgba(34, 211, 238, 0.35), transparent 60%),
+    linear-gradient(135deg, #0b0b15, #120a1f 40%, #061019);
+  background-size: 200% 200%;
+  animation: gradient 18s ease infinite;
+}
+
+.bar-fill {
+  width: 0%;
+  animation: bar-grow 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes bar-grow {
+  from { width: 0%; }
+  to   { width: var(--tw-bar, 0%); }
+}
+
+.pulse-dot::before {
+  content: "";
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 9999px;
+  background: #ef4444;
+  margin-right: 0.5rem;
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.35); opacity: 0.55; }
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed;
+}
+.btn-primary {
+  @apply btn bg-gradient-to-r from-fuchsia-500 to-violet-500 text-white shadow-lg shadow-fuchsia-500/30 hover:from-fuchsia-400 hover:to-violet-400;
+}
+.btn-ghost {
+  @apply btn bg-white/5 text-white/90 hover:bg-white/10 border border-white/10;
+}
+.btn-danger {
+  @apply btn bg-red-500/80 text-white hover:bg-red-500;
+}
+.card {
+  @apply rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-4;
+}
+.input {
+  @apply w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-fuchsia-400/60 focus:ring-2 focus:ring-fuchsia-400/20;
+}

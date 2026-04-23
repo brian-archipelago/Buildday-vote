@@ -1,68 +1,38 @@
 import { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth";
-import { genId, setState, store } from "@/lib/store";
-import { summarizePitch } from "@/lib/anthropic";
+import { genId, setState, publicState } from "@/lib/store";
 
 export const runtime = "nodejs";
 
-// POST /api/pitch  body: { transcript: string, manualTitle?, manualDescription? }
-// Creates a new pitch entry, summarizes via Claude (async-in-request) and broadcasts.
+// POST /api/pitch  body: { title: string, description: string }
+// Manual admin add -- always locked so the analyzer can't stomp on it.
 export async function POST(req: NextRequest) {
   const gate = requireAdmin(req);
   if (gate) return gate;
 
-  let body: { transcript?: string; title?: string; description?: string } = {};
-  try {
-    body = await req.json();
-  } catch {}
-  const transcript = (body.transcript ?? "").trim();
-  const providedTitle = body.title?.trim();
-  const providedDescription = body.description?.trim();
+  const body = await req.json().catch(() => ({}));
+  const title = String(body.title ?? "").trim().slice(0, 80) || "Untitled Pitch";
+  const description =
+    String(body.description ?? "").trim().slice(0, 240) || "(no description)";
 
   const id = genId();
+  const now = Date.now();
   setState((s) => {
+    const maxOrder = s.pitches.reduce((m, p) => Math.max(m, p.order), -1);
     s.pitches.push({
       id,
-      title: providedTitle || "Summarizing…",
-      description: providedDescription || "Listening to the pitch…",
-      status: providedTitle && providedDescription ? "ready" : "summarizing",
-      createdAt: Date.now(),
+      title,
+      description,
+      status: "completed",
+      order: maxOrder + 1,
+      startedAt: now,
+      endedAt: now,
+      locked: true,
     });
   });
-
-  // If admin provided full manual entry, skip Claude.
-  if (providedTitle && providedDescription) {
-    return Response.json({ ok: true, id });
-  }
-
-  // Summarize in the background so the request returns fast.
-  (async () => {
-    try {
-      const summary = await summarizePitch(transcript);
-      setState((s) => {
-        const p = s.pitches.find((x) => x.id === id);
-        if (!p) return;
-        p.title = summary.title;
-        p.description = summary.description;
-        p.status = "ready";
-      });
-    } catch (err) {
-      console.error("summarize failed", err);
-      setState((s) => {
-        const p = s.pitches.find((x) => x.id === id);
-        if (!p) return;
-        p.title = "Untitled Pitch";
-        p.description =
-          transcript.slice(0, 140) || "(summary failed — edit me from admin)";
-        p.status = "ready";
-      });
-    }
-  })();
-
   return Response.json({ ok: true, id });
 }
 
-// GET /api/pitch -> current state snapshot (handy for debugging)
 export async function GET() {
-  return Response.json(store.state);
+  return Response.json(publicState().pitches);
 }
