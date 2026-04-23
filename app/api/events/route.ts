@@ -1,0 +1,56 @@
+import { NextRequest } from "next/server";
+import { store } from "@/lib/store";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+export async function GET(req: NextRequest) {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      let closed = false;
+      const safeEnqueue = (chunk: string) => {
+        if (closed) return;
+        try {
+          controller.enqueue(encoder.encode(chunk));
+        } catch {
+          closed = true;
+        }
+      };
+      const send = (state: unknown) => {
+        safeEnqueue(`data: ${JSON.stringify(state)}\n\n`);
+      };
+
+      // initial snapshot
+      send(store.state);
+
+      const onUpdate = (state: unknown) => send(state);
+      store.emitter.on("update", onUpdate);
+
+      const heartbeat = setInterval(() => {
+        safeEnqueue(`: ping\n\n`);
+      }, 15000);
+
+      const close = () => {
+        if (closed) return;
+        closed = true;
+        clearInterval(heartbeat);
+        store.emitter.off("update", onUpdate);
+        try {
+          controller.close();
+        } catch {}
+      };
+
+      req.signal.addEventListener("abort", close);
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  });
+}
