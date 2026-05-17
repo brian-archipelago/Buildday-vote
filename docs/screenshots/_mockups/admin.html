@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admin — phone</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body { width: 390px; }
+  .frame {
+    width: 390px; min-height: 1180px;
+    padding: 20px 14px 60px;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  header.top { display: flex; align-items: center; justify-content: space-between; padding-top: 8px; }
+  .title { font-size: 1.4rem; font-weight: 700; font-family: "Space Grotesk", "Inter", sans-serif; }
+  .subtitle { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+  .section-title { font-size: 1.05rem; font-weight: 700; }
+  .section-sub { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+  .row-split { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+  .pill-live { color: #FCA5A5; font-weight: 700; font-size: 0.85rem; }
+  .pill-analyzing { color: rgba(56,245,163,0.85); font-size: 0.7rem; margin-top: 4px; }
+
+  .stop-btn {
+    margin-top: 14px; width: 100%; padding: 12px 16px;
+    background: rgba(244, 63, 94, 0.85); border-radius: 0.75rem;
+    color: #fff; font-weight: 700; font-size: 0.95rem;
+    text-align: center;
+  }
+
+  .transcript-eyebrow { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.18em; color: rgba(255,255,255,0.4); margin-top: 14px; margin-bottom: 6px; }
+  .transcript {
+    border-radius: 0.5rem; background: rgba(0,0,0,0.30);
+    padding: 12px; font-style: italic;
+    font-size: 0.8rem; color: rgba(255,255,255,0.8);
+    line-height: 1.5;
+  }
+
+  .pitches-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .pitch-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .btn-sm { padding: 6px 10px; font-size: 0.75rem; border-radius: 0.6rem; }
+
+  .pitch-row {
+    border-radius: 0.75rem; background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.10);
+    padding: 12px; margin-top: 10px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .pitch-row .num {
+    flex: 0 0 auto; width: 28px; height: 28px; border-radius: 9999px;
+    background: rgba(255,255,255,0.10); display: flex; align-items: center;
+    justify-content: center; font-size: 0.75rem; font-weight: 700;
+  }
+  .pitch-row .body { flex: 1; min-width: 0; }
+  .pitch-row .name { font-weight: 600; font-size: 0.95rem; }
+  .pitch-row .desc { color: rgba(255,255,255,0.7); font-size: 0.82rem; margin-top: 2px; }
+  .badge {
+    display: inline-block; font-size: 0.62rem; text-transform: uppercase;
+    letter-spacing: 0.16em; padding: 2px 8px; border-radius: 9999px;
+    border: 1px solid; margin-left: 6px;
+    vertical-align: middle;
+  }
+  .badge.live { background: rgba(56,245,163,0.20); color: var(--brand-mint); border-color: rgba(56,245,163,0.40); }
+  .badge.done { background: rgba(0,189,165,0.20); color: var(--brand-teal); border-color: rgba(0,189,165,0.40); }
+  .pitch-row .actions { display: flex; flex-direction: column; gap: 4px; }
+  .pitch-row .actions .btn { padding: 4px 8px; font-size: 0.7rem; border-radius: 0.5rem; }
+
+  /* Poll stage */
+  .stage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .stage-card {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.05);
+    padding: 12px;
+  }
+  .stage-card.active {
+    background: linear-gradient(to right, rgba(46,104,255,0.40), rgba(91,138,255,0.40));
+    border-color: rgba(46,104,255,0.50);
+  }
+  .stage-card .l { font-weight: 600; font-size: 0.9rem; }
+  .stage-card .h { font-size: 0.7rem; color: rgba(255,255,255,0.65); margin-top: 2px; }
+
+  /* Reveal */
+  .stepper { display: inline-flex; align-items: center; gap: 8px; }
+  .step-btn { width: 34px; height: 34px; border-radius: 0.6rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); color: #fff; font-size: 1.1rem; line-height: 1; }
+  .step-n { font-family: "Space Grotesk", sans-serif; font-size: 1.4rem; font-weight: 700; min-width: 40px; text-align: center; }
+
+  .reveal-buttons { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px; }
+</style>
+</head>
+<body class="bg-aurora">
+  <div class="bg-aurora">
+    <div class="frame">
+
+      <header class="top">
+        <div>
+          <div class="title">Admin Console</div>
+          <div class="subtitle">Mic operator · poll controls · manual overrides</div>
+        </div>
+        <button class="btn btn-ghost btn-sm">Sign out</button>
+      </header>
+
+      <!-- Microphone -->
+      <section class="card">
+        <div class="row-split">
+          <div>
+            <div class="section-title">Microphone</div>
+            <div class="section-sub">Streams to OpenAI gpt-4o-transcribe. gpt-5.4-mini writes pitches live.</div>
+          </div>
+          <div style="text-align:right;">
+            <span class="pill-live pulse-dot">LIVE</span>
+            <div class="pill-analyzing">Analyzing transcript…</div>
+          </div>
+        </div>
+        <div class="stop-btn">■ Stop recording</div>
+        <div class="transcript-eyebrow">Live transcript</div>
+        <div class="transcript">
+          …so we trained it on the sound of a hundred engines, and now you just point your phone at the dashboard, it listens for ten seconds, and tells you whether it's the alternator or the timing belt before you ever pop the hood…
+        </div>
+      </section>
+
+      <!-- Pitches -->
+      <section class="card">
+        <div class="pitches-head">
+          <div>
+            <div class="section-title">Pitches (7)</div>
+            <div class="section-sub">AI writes these live. Tap any pitch to edit — your edit locks it.</div>
+          </div>
+          <div class="pitch-actions">
+            <button class="btn btn-ghost btn-sm">↶ Undo (2)</button>
+            <button class="btn btn-primary btn-sm">+ Add</button>
+          </div>
+        </div>
+
+        <div class="pitch-row">
+          <div class="num">1</div>
+          <div class="body">
+            <div>
+              <span class="name">AutoMech</span>
+              <span class="badge done">done</span>
+              <span style="color: rgba(255,255,255,0.5); font-size: 0.7rem;">🔒</span>
+            </div>
+            <div class="desc">AI mechanic that diagnoses your car from a recording of the engine.</div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost">Edit</button>
+            <button class="btn btn-ghost">Reopen</button>
+          </div>
+        </div>
+
+        <div class="pitch-row">
+          <div class="num">2</div>
+          <div class="body">
+            <div>
+              <span class="name">PitchLens</span>
+              <span class="badge done">done</span>
+            </div>
+            <div class="desc">Camera-first investor deck builder for founders who don't know PowerPoint.</div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost">Edit</button>
+            <button class="btn btn-ghost">Reopen</button>
+          </div>
+        </div>
+
+        <div class="pitch-row">
+          <div class="num">3</div>
+          <div class="body">
+            <div>
+              <span class="name">ChromaForge</span>
+              <span class="badge live">live</span>
+            </div>
+            <div class="desc">Make any product photo match your brand palette in one shot.</div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost">Edit</button>
+            <button class="btn btn-ghost">Done</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Poll Stage -->
+      <section class="card">
+        <div class="row-split">
+          <div>
+            <div class="section-title">Poll Stage</div>
+            <div class="section-sub">Current: <b>DRAFT</b> · 0 ballots received</div>
+          </div>
+        </div>
+        <div class="stage-grid">
+          <div class="stage-card active">
+            <div class="l">Draft</div>
+            <div class="h">Pitches only; voting off</div>
+          </div>
+          <div class="stage-card">
+            <div class="l">Open Voting</div>
+            <div class="h">Voters can submit</div>
+          </div>
+          <div class="stage-card">
+            <div class="l">Close Voting</div>
+            <div class="h">No more submissions</div>
+          </div>
+          <div class="stage-card">
+            <div class="l">Reveal Results</div>
+            <div class="h">Show tally on display</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Results reveal -->
+      <section class="card">
+        <div class="row-split">
+          <div>
+            <div class="section-title">Results Reveal</div>
+            <div class="section-sub">Stage how many top results show first.</div>
+          </div>
+          <div style="text-align:right; font-size:0.72rem; color: rgba(255,255,255,0.6);">
+            Reveal controls activate<br>at the results stage
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:14px; flex-wrap:wrap;">
+          <span style="font-size:0.85rem; color: rgba(255,255,255,0.7);">Show top</span>
+          <div class="stepper">
+            <button class="step-btn">−</button>
+            <div class="step-n">3</div>
+            <button class="step-btn">+</button>
+          </div>
+          <span style="font-size:0.8rem; color: rgba(255,255,255,0.6);">of 7 pitches</span>
+        </div>
+        <div class="reveal-buttons">
+          <button class="btn btn-primary">Reveal #1</button>
+          <button class="btn btn-accent">Show remaining</button>
+          <button class="btn btn-ghost">Reset reveal</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</body>
+</html>

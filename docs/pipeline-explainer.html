@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How the AI builds the poll</title>
+<style>
+  :root {
+    --navy:        #103468;
+    --deep-navy:   #0a1a36;
+    --blue:        #2E68FF;
+    --subtle-blue: #5B8AFF;
+    --mint:        #38F5A3;
+    --teal:        #00BDA5;
+    --slate:       #94a3b8;
+    --slate-light: #cbd5e1;
+    --danger:      #F43F5E;
+    --card:        rgba(255,255,255,0.05);
+    --card-border: rgba(255,255,255,0.1);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--deep-navy);
+    color: #fff;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.55;
+  }
+  body {
+    background-image:
+      radial-gradient(1200px 800px at 10% 10%, rgba(56, 245, 163, 0.08), transparent 60%),
+      radial-gradient(1000px 700px at 90% 20%, rgba(46, 104, 255, 0.18), transparent 60%),
+      radial-gradient(1100px 900px at 50% 100%, rgba(91, 138, 255, 0.16), transparent 60%),
+      linear-gradient(135deg, #103468 0%, #1B2D50 55%, #0a1a36 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  main { max-width: 940px; margin: 0 auto; padding: 48px 24px 96px; }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+  }
+  h1 {
+    font-size: 44px;
+    line-height: 1.1;
+    margin: 8px 0 4px;
+    font-weight: 800;
+    background: linear-gradient(90deg, var(--mint), #fff, var(--subtle-blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    padding-bottom: 4px;
+  }
+  .lede {
+    color: rgba(255,255,255,0.7);
+    margin-top: 6px;
+    max-width: 60ch;
+  }
+  h2 {
+    font-size: 22px;
+    margin: 56px 0 4px;
+    font-weight: 700;
+  }
+  h2 .num {
+    display: inline-block;
+    width: 32px; height: 32px;
+    margin-right: 12px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(46,104,255,0.4), rgba(56,245,163,0.3));
+    border: 1px solid rgba(255,255,255,0.15);
+    text-align: center;
+    line-height: 32px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--mint);
+    vertical-align: middle;
+  }
+  .sub {
+    color: rgba(255,255,255,0.6);
+    font-size: 14px;
+    margin: 0 0 20px 44px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 24px;
+    backdrop-filter: blur(10px);
+    margin: 20px 0;
+  }
+  svg { display: block; max-width: 100%; height: auto; }
+  .caption {
+    font-size: 13px;
+    color: rgba(255,255,255,0.55);
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+  .callout {
+    margin-top: 20px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: rgba(244, 63, 94, 0.10);
+    border: 1px solid rgba(244, 63, 94, 0.35);
+    font-size: 14px;
+  }
+  .callout.good {
+    background: rgba(56, 245, 163, 0.10);
+    border-color: rgba(56, 245, 163, 0.35);
+  }
+  .callout strong { color: #fff; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: rgba(0,0,0,0.3);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: var(--mint);
+  }
+  .legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    margin-top: 14px;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border-radius: 3px;
+  }
+  .footer {
+    margin-top: 80px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.4);
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">Buildday Poll · Architecture</div>
+  <h1>How the AI builds the poll</h1>
+  <p class="lede">
+    Two different models, a rolling 5-minute transcript window, and a merge step
+    that has to be additive — or pitches disappear. Here's the whole pipeline in
+    four diagrams.
+  </p>
+
+  <!-- ============ DIAGRAM 1: END-TO-END FLOW ============ -->
+  <h2><span class="num">1</span>End-to-end flow</h2>
+  <p class="sub">Mic on the room → transcription model → store → analyzer model → every screen.</p>
+
+  <div class="card">
+    <svg viewBox="0 0 880 540" role="img" aria-label="End-to-end flow from microphone to displays">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#5B8AFF" />
+        </marker>
+        <marker id="arrow-mint" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#38F5A3" />
+        </marker>
+        <linearGradient id="cardGrad" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.08)" />
+          <stop offset="100%" stop-color="rgba(255,255,255,0.02)" />
+        </linearGradient>
+      </defs>
+
+      <!-- Mic -->
+      <g transform="translate(20,40)">
+        <rect width="170" height="70" rx="12" fill="url(#cardGrad)" stroke="#5B8AFF" stroke-width="1.5"/>
+        <text x="85" y="30" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">Admin's mic</text>
+        <text x="85" y="50" text-anchor="middle" fill="#94a3b8" font-size="11">browser, WebRTC</text>
+      </g>
+
+      <!-- Transcription model -->
+      <g transform="translate(280,30)">
+        <rect width="220" height="90" rx="12" fill="url(#cardGrad)" stroke="#2E68FF" stroke-width="2"/>
+        <text x="110" y="28" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">OpenAI gpt-4o-transcribe</text>
+        <text x="110" y="48" text-anchor="middle" fill="#94a3b8" font-size="11">live speech → text deltas</text>
+        <text x="110" y="68" text-anchor="middle" fill="#94a3b8" font-size="11">+ completed segments</text>
+      </g>
+
+      <!-- POST /api/transcript -->
+      <g transform="translate(580,40)">
+        <rect width="220" height="70" rx="12" fill="url(#cardGrad)" stroke="#5B8AFF" stroke-width="1.5"/>
+        <text x="110" y="30" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">POST /api/transcript</text>
+        <text x="110" y="50" text-anchor="middle" fill="#94a3b8" font-size="11">admin browser pushes each chunk</text>
+      </g>
+
+      <!-- Arrows top row -->
+      <line x1="190" y1="75" x2="280" y2="75" stroke="#5B8AFF" stroke-width="2" marker-end="url(#arrow)"/>
+      <line x1="500" y1="75" x2="580" y2="75" stroke="#5B8AFF" stroke-width="2" marker-end="url(#arrow)"/>
+
+      <!-- Store -->
+      <g transform="translate(180,180)">
+        <rect width="520" height="160" rx="14" fill="rgba(46,104,255,0.10)" stroke="#5B8AFF" stroke-width="2"/>
+        <text x="260" y="30" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">In-memory store · lib/store.ts</text>
+        <text x="260" y="48" text-anchor="middle" fill="#94a3b8" font-size="11">single Node process · globalThis · SSE emitter</text>
+        <g font-family="ui-monospace,monospace" font-size="12" fill="#cbd5e1">
+          <text x="40" y="80">_segments[]</text>      <text x="180" y="80" fill="#94a3b8">rolling 5-min transcript window</text>
+          <text x="40" y="100">pitches[]</text>        <text x="180" y="100" fill="#38F5A3">canonical list (the poll)</text>
+          <text x="40" y="120">_deletedTitles</text>   <text x="180" y="120" fill="#94a3b8">admin tombstones</text>
+          <text x="40" y="140">_history[]</text>       <text x="180" y="140" fill="#94a3b8">undo snapshots (cap 50)</text>
+        </g>
+      </g>
+
+      <!-- Arrow store->analyzer -->
+      <line x1="430" y1="75" x2="430" y2="180" stroke="#5B8AFF" stroke-width="2" marker-end="url(#arrow)"/>
+      <text x="445" y="135" fill="#94a3b8" font-size="11">setState()</text>
+
+      <!-- Analyzer -->
+      <g transform="translate(20,400)">
+        <rect width="380" height="110" rx="12" fill="url(#cardGrad)" stroke="#38F5A3" stroke-width="2"/>
+        <text x="190" y="28" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">runAnalyzerOnce · lib/analyzer.ts</text>
+        <text x="190" y="48" text-anchor="middle" fill="#38F5A3" font-size="12">gpt-5.4-mini · the boundary analyzer</text>
+        <text x="190" y="72" text-anchor="middle" fill="#94a3b8" font-size="11">reads existing pitches + transcript window</text>
+        <text x="190" y="90" text-anchor="middle" fill="#94a3b8" font-size="11">returns updated pitch list → merges into store</text>
+      </g>
+
+      <!-- Browsers -->
+      <g transform="translate(480,400)">
+        <rect width="380" height="110" rx="12" fill="url(#cardGrad)" stroke="#5B8AFF" stroke-width="1.5"/>
+        <text x="190" y="28" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">/display · /vote · /admin</text>
+        <text x="190" y="48" text-anchor="middle" fill="#94a3b8" font-size="11">subscribed via Server-Sent Events</text>
+        <text x="190" y="72" text-anchor="middle" fill="#94a3b8" font-size="11">useLiveState() re-renders on every store change</text>
+        <text x="190" y="92" text-anchor="middle" fill="#94a3b8" font-size="11">all screens stay in lockstep</text>
+      </g>
+
+      <!-- Arrows bottom -->
+      <path d="M 290 340 Q 290 370 210 400" stroke="#38F5A3" stroke-width="2" fill="none" marker-end="url(#arrow-mint)"/>
+      <text x="170" y="378" fill="#38F5A3" font-size="11">8–30s cadence</text>
+
+      <path d="M 580 340 Q 580 370 670 400" stroke="#5B8AFF" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+      <text x="600" y="378" fill="#94a3b8" font-size="11">SSE emit on every change</text>
+
+      <!-- Analyzer back into store -->
+      <path d="M 200 400 Q 130 370 180 340" stroke="#38F5A3" stroke-width="2" stroke-dasharray="4 3" fill="none" marker-end="url(#arrow-mint)"/>
+      <text x="40" y="378" fill="#38F5A3" font-size="11">writes pitches</text>
+    </svg>
+
+    <div class="legend">
+      <span><i style="background:#2E68FF"></i> transcription model</span>
+      <span><i style="background:#38F5A3"></i> analyzer model</span>
+      <span><i style="background:#5B8AFF"></i> infra / data flow</span>
+    </div>
+    <div class="caption">
+      Two different OpenAI models do two different jobs. <code>gpt-4o-transcribe</code>
+      handles speech→text in real time; <code>gpt-5.4-mini</code> periodically reads
+      the rolling transcript and decides where one pitch ends and the next begins.
+      The store is the only source of truth — every screen subscribes via SSE.
+    </div>
+  </div>
+
+  <!-- ============ DIAGRAM 2: ONE ANALYZER PASS ============ -->
+  <h2><span class="num">2</span>One analyzer pass — the prompt</h2>
+  <p class="sub">What the analyzer model actually sees, and what it returns.</p>
+
+  <div class="card">
+    <svg viewBox="0 0 880 580" role="img" aria-label="Analyzer prompt input and output">
+      <defs>
+        <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#38F5A3" />
+        </marker>
+      </defs>
+
+      <!-- INPUT box -->
+      <g transform="translate(20,20)">
+        <rect width="840" height="280" rx="14" fill="rgba(46,104,255,0.08)" stroke="#2E68FF" stroke-width="2"/>
+        <text x="20" y="28" fill="#5B8AFF" font-size="12" font-weight="700" letter-spacing="2">INPUT TO gpt-5.4-mini</text>
+
+        <!-- system prompt -->
+        <g transform="translate(20,50)">
+          <rect width="800" height="44" rx="8" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.12)"/>
+          <text x="14" y="20" fill="#fff" font-size="13" font-weight="700">System prompt</text>
+          <text x="14" y="36" fill="#94a3b8" font-size="11">"You are the pitch boundary analyzer..." — rules for create / refine / end</text>
+        </g>
+
+        <!-- existing pitches -->
+        <g transform="translate(20,108)">
+          <rect width="260" height="150" rx="8" fill="rgba(0,0,0,0.25)" stroke="rgba(255,255,255,0.12)"/>
+          <text x="14" y="20" fill="#38F5A3" font-size="12" font-weight="700">Existing pitches</text>
+          <g font-family="ui-monospace,monospace" font-size="10" fill="#cbd5e1">
+            <text x="14" y="42">[</text>
+            <text x="20" y="58">{ id, title, description,</text>
+            <text x="20" y="72">  emoji, status, locked },</text>
+            <text x="20" y="88">{ id, title, description, ... }</text>
+            <text x="14" y="104">]</text>
+          </g>
+          <text x="14" y="130" fill="#94a3b8" font-size="10">↑ what we currently have</text>
+        </g>
+
+        <!-- deleted tombstones -->
+        <g transform="translate(290,108)">
+          <rect width="260" height="150" rx="8" fill="rgba(0,0,0,0.25)" stroke="rgba(255,255,255,0.12)"/>
+          <text x="14" y="20" fill="#F43F5E" font-size="12" font-weight="700">DELETED BY ADMIN</text>
+          <g font-family="ui-monospace,monospace" font-size="10" fill="#cbd5e1">
+            <text x="14" y="42">[</text>
+            <text x="20" y="58">"Patagonia Trip Organizer",</text>
+            <text x="20" y="74">"Vibe Code Reviewer",</text>
+            <text x="20" y="90">...</text>
+            <text x="14" y="104">]</text>
+          </g>
+          <text x="14" y="130" fill="#94a3b8" font-size="10">↑ tombstones — do NOT</text>
+          <text x="14" y="142" fill="#94a3b8" font-size="10">re-create even if mentioned</text>
+        </g>
+
+        <!-- transcript -->
+        <g transform="translate(560,108)">
+          <rect width="260" height="150" rx="8" fill="rgba(0,0,0,0.25)" stroke="rgba(255,255,255,0.12)"/>
+          <text x="14" y="20" fill="#5B8AFF" font-size="12" font-weight="700">Rolling transcript (5 min)</text>
+          <g font-family="ui-monospace,monospace" font-size="10" fill="#cbd5e1">
+            <text x="14" y="42">[t=0s]   Welcome everyone…</text>
+            <text x="14" y="56">[t=14s]  My pitch is a tool</text>
+            <text x="14" y="70">         that helps engineers…</text>
+            <text x="14" y="86">[t=42s]  Round of applause!</text>
+            <text x="14" y="100">[t=58s]  Next up, this one</text>
+            <text x="14" y="114">         scans inspection…</text>
+          </g>
+          <text x="14" y="138" fill="#94a3b8" font-size="10">↑ each line timestamped</text>
+        </g>
+      </g>
+
+      <!-- arrow down -->
+      <line x1="440" y1="305" x2="440" y2="345" stroke="#38F5A3" stroke-width="2" marker-end="url(#arrow2)"/>
+      <text x="450" y="328" fill="#38F5A3" font-size="11">analyzes</text>
+
+      <!-- OUTPUT box -->
+      <g transform="translate(20,360)">
+        <rect width="840" height="200" rx="14" fill="rgba(56,245,163,0.07)" stroke="#38F5A3" stroke-width="2"/>
+        <text x="20" y="28" fill="#38F5A3" font-size="12" font-weight="700" letter-spacing="2">OUTPUT (JSON)</text>
+
+        <g font-family="ui-monospace,monospace" font-size="12" fill="#cbd5e1" transform="translate(28,52)">
+          <text y="0">{</text>
+          <text y="18">  "pitches": [</text>
+          <text y="36">    { "id": "abc123", "title": "Inspection Scribe",</text>
+          <text y="52">      "description": "Photo + voice → AI report.",</text>
+          <text y="68">      "emoji": "📋", "status": "completed" },</text>
+          <text y="86">    { "id": "def456", "title": "Vibe CAD Helper", ... },</text>
+          <text y="104">    ...</text>
+          <text y="122">  ]</text>
+          <text y="140">}</text>
+        </g>
+      </g>
+    </svg>
+    <div class="caption">
+      The analyzer is a <strong>boundary detector</strong>, not a transcriber. It looks at the timestamped
+      transcript and decides "the stretch from t=14s to t=42s is one pitch about X."
+      Each entry it returns is either an existing pitch (echoed by id, possibly with refined fields)
+      or a new pitch it just identified.
+    </div>
+  </div>
+
+  <!-- ============ DIAGRAM 3: MERGE LOGIC ============ -->
+  <h2><span class="num">3</span>The merge — additive, never destructive</h2>
+  <p class="sub">How the model's response combines with what's already in the store. (This is the part that broke before.)</p>
+
+  <div class="card">
+    <svg viewBox="0 0 880 600" role="img" aria-label="Merge logic for analyzer output">
+      <defs>
+        <marker id="arrow3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#38F5A3" />
+        </marker>
+      </defs>
+
+      <!-- existing -->
+      <g transform="translate(20,20)">
+        <rect width="380" height="160" rx="12" fill="url(#cardGrad)" stroke="#5B8AFF" stroke-width="1.5"/>
+        <text x="20" y="28" fill="#fff" font-size="14" font-weight="700">Existing pitches[]</text>
+        <text x="20" y="48" fill="#94a3b8" font-size="11">(current state in the store)</text>
+        <g font-family="ui-monospace,monospace" font-size="11" fill="#cbd5e1" transform="translate(20,70)">
+          <text y="0">A · "Workout Builder"   🔓</text>
+          <text y="20">B · "Inspection Scribe" 🔒 locked</text>
+          <text y="40">C · "Voice Silliness"   🔓</text>
+          <text y="60">D · "Monitor Shopping"  🔓</text>
+        </g>
+      </g>
+
+      <!-- model output -->
+      <g transform="translate(480,20)">
+        <rect width="380" height="160" rx="12" fill="url(#cardGrad)" stroke="#38F5A3" stroke-width="1.5"/>
+        <text x="20" y="28" fill="#fff" font-size="14" font-weight="700">Model response</text>
+        <text x="20" y="48" fill="#94a3b8" font-size="11">(what gpt-5.4-mini just returned)</text>
+        <g font-family="ui-monospace,monospace" font-size="11" fill="#cbd5e1" transform="translate(20,70)">
+          <text y="0">A · "AI Workout Coach"   ← refined</text>
+          <text y="20"><tspan fill="#94a3b8">— B not echoed —</tspan></text>
+          <text y="40">D · "Monitor Shopping App"</text>
+          <text y="60">E · "Permit Navigator"   ← NEW</text>
+        </g>
+      </g>
+
+      <!-- merge box -->
+      <g transform="translate(20,220)">
+        <rect width="840" height="220" rx="14" fill="rgba(56,245,163,0.08)" stroke="#38F5A3" stroke-width="2"/>
+        <text x="20" y="28" fill="#38F5A3" font-size="12" font-weight="700" letter-spacing="2">ADDITIVE MERGE</text>
+
+        <g font-family="ui-monospace,monospace" font-size="13" fill="#cbd5e1" transform="translate(28,55)">
+          <text y="0">for each existing pitch P:</text>
+          <text y="22">  if model echoed P.id and P is NOT locked</text>
+          <text y="38">     <tspan fill="#38F5A3">→ update title / desc / emoji / status in place</tspan></text>
+          <text y="60">  else</text>
+          <text y="76">     <tspan fill="#38F5A3">→ keep P unchanged</tspan>  <tspan fill="#F43F5E">← this line saved your event</tspan></text>
+          <text y="106">for each model entry with a NEW id:</text>
+          <text y="122">  <tspan fill="#38F5A3">→ append to end</tspan></text>
+          <text y="148"><tspan fill="#F43F5E">never:</tspan> drop an existing pitch because the model omitted it</text>
+          <text y="164"><tspan fill="#F43F5E">never:</tspan> mutate a locked pitch</text>
+        </g>
+      </g>
+
+      <line x1="440" y1="445" x2="440" y2="475" stroke="#38F5A3" stroke-width="2" marker-end="url(#arrow3)"/>
+
+      <!-- result -->
+      <g transform="translate(20,490)">
+        <rect width="840" height="100" rx="12" fill="url(#cardGrad)" stroke="#38F5A3" stroke-width="1.5"/>
+        <text x="20" y="28" fill="#fff" font-size="14" font-weight="700">New pitches[] → SSE → every screen</text>
+        <g font-family="ui-monospace,monospace" font-size="11" fill="#cbd5e1" transform="translate(20,50)">
+          <text y="0">A "AI Workout Coach"  ·  B "Inspection Scribe" 🔒  ·  C "Voice Silliness"  ·  D "Monitor Shopping App"  ·  E "Permit Navigator" (new)</text>
+          <text y="22" fill="#94a3b8">5 pitches: A refined, B untouched (locked), C kept (model omitted), D refined, E appended.</text>
+        </g>
+      </g>
+    </svg>
+
+    <div class="callout">
+      <strong>Why the production bug happened:</strong> the old merge did
+      <code>s.pitches = whatever-the-model-returned</code>. When 15 pitches had
+      accumulated but the rolling 5-minute transcript only mentioned the last
+      one or two, the model "consolidated" and returned 5. The merge replaced
+      15 with 5 — pitches gone. And the periodic timer kept firing for ~5
+      minutes after Stop, running the merge three more times with progressively
+      thinner context. <strong>15 → 12 → 5.</strong>
+    </div>
+    <div class="callout good">
+      <strong>The fix:</strong> the merge is now strictly additive. The model can
+      only refine unlocked pitches in place or propose brand-new ones. Removal
+      is admin-only (Delete button + tombstone in <code>_deletedTitles</code>).
+      Plus: the periodic timer skips when recording is off and nothing new has
+      arrived since the last pass — no more ghost passes thrashing the model.
+    </div>
+  </div>
+
+  <!-- ============ DIAGRAM 4: TIMING ============ -->
+  <h2><span class="num">4</span>Timing — when the analyzer fires</h2>
+  <p class="sub">Two triggers, two cadence rules, and one safety brake after Stop.</p>
+
+  <div class="card">
+    <svg viewBox="0 0 880 360" role="img" aria-label="Analyzer timing along a timeline">
+      <!-- timeline -->
+      <line x1="40" y1="180" x2="840" y2="180" stroke="#5B8AFF" stroke-width="2"/>
+      <polygon points="840,180 832,176 832,184" fill="#5B8AFF"/>
+      <text x="840" y="200" fill="#94a3b8" font-size="11">time</text>
+
+      <!-- chunks -->
+      <g fill="#38F5A3">
+        <circle cx="80" cy="180" r="6"/>
+        <circle cx="140" cy="180" r="6"/>
+        <circle cx="200" cy="180" r="6"/>
+        <circle cx="270" cy="180" r="6"/>
+        <circle cx="340" cy="180" r="6"/>
+        <circle cx="410" cy="180" r="6"/>
+        <circle cx="480" cy="180" r="6"/>
+        <circle cx="550" cy="180" r="6"/>
+      </g>
+      <text x="80" y="155" text-anchor="middle" fill="#94a3b8" font-size="10">transcript chunks arrive</text>
+
+      <!-- mic on -->
+      <g transform="translate(40,40)">
+        <rect width="140" height="50" rx="8" fill="rgba(56,245,163,0.15)" stroke="#38F5A3"/>
+        <text x="70" y="22" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">Mic ON</text>
+        <text x="70" y="40" text-anchor="middle" fill="#38F5A3" font-size="11">recording = true</text>
+      </g>
+      <line x1="100" y1="90" x2="100" y2="180" stroke="#38F5A3" stroke-dasharray="2 3"/>
+
+      <!-- mic off -->
+      <g transform="translate(620,40)">
+        <rect width="160" height="50" rx="8" fill="rgba(244,63,94,0.15)" stroke="#F43F5E"/>
+        <text x="80" y="22" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">Mic OFF</text>
+        <text x="80" y="40" text-anchor="middle" fill="#F43F5E" font-size="11">recording = false</text>
+      </g>
+      <line x1="700" y1="90" x2="700" y2="180" stroke="#F43F5E" stroke-dasharray="2 3"/>
+
+      <!-- analyzer trigger 1 -->
+      <line x1="160" y1="180" x2="160" y2="240" stroke="#5B8AFF" stroke-width="2"/>
+      <g transform="translate(110,245)">
+        <rect width="120" height="40" rx="6" fill="rgba(46,104,255,0.15)" stroke="#5B8AFF"/>
+        <text x="60" y="17" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">analyzer pass</text>
+        <text x="60" y="32" text-anchor="middle" fill="#94a3b8" font-size="10">8s after first chunk</text>
+      </g>
+
+      <!-- analyzer trigger 2 -->
+      <line x1="320" y1="180" x2="320" y2="240" stroke="#5B8AFF" stroke-width="2"/>
+      <g transform="translate(265,245)">
+        <rect width="120" height="40" rx="6" fill="rgba(46,104,255,0.15)" stroke="#5B8AFF"/>
+        <text x="60" y="17" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">analyzer pass</text>
+        <text x="60" y="32" text-anchor="middle" fill="#94a3b8" font-size="10">≥ 8s gap honored</text>
+      </g>
+
+      <!-- analyzer trigger 3 (forced, max cadence) -->
+      <line x1="560" y1="180" x2="560" y2="240" stroke="#5B8AFF" stroke-width="2"/>
+      <g transform="translate(495,245)">
+        <rect width="140" height="40" rx="6" fill="rgba(46,104,255,0.15)" stroke="#5B8AFF"/>
+        <text x="70" y="17" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">forced pass</text>
+        <text x="70" y="32" text-anchor="middle" fill="#94a3b8" font-size="10">30s timer (quiet room)</text>
+      </g>
+
+      <!-- after stop, no more passes -->
+      <g transform="translate(720,245)">
+        <rect width="140" height="40" rx="6" fill="rgba(244,63,94,0.10)" stroke="#F43F5E" stroke-dasharray="3 3"/>
+        <text x="70" y="17" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">timer skips</text>
+        <text x="70" y="32" text-anchor="middle" fill="#F43F5E" font-size="10">!recording &amp; nothing new</text>
+      </g>
+
+      <!-- legend at top -->
+      <g transform="translate(220,40)">
+        <circle cx="6" cy="20" r="5" fill="#38F5A3"/>
+        <text x="18" y="24" fill="#cbd5e1" font-size="11">transcript chunk ingested into _segments[]</text>
+      </g>
+
+      <!-- bottom rules box -->
+      <g transform="translate(40,310)">
+        <text x="0" y="0" fill="#94a3b8" font-size="11">
+          <tspan font-weight="700" fill="#fff">Two cadence rules:</tspan>
+          MIN 8s between passes (don't hammer the API) ·
+          MAX 30s between passes (force one even when nothing new)
+        </tspan>
+        </text>
+        <text x="0" y="20" fill="#94a3b8" font-size="11">
+          <tspan font-weight="700" fill="#fff">Safety brake (post-disaster):</tspan>
+          after Stop, the periodic timer no-ops if nothing new has been ingested. Late-arriving final segment still gets one pass.
+        </text>
+      </g>
+    </svg>
+    <div class="caption">
+      Each green dot is a transcript segment landing in the rolling window.
+      Each blue tick is an analyzer pass running. The pre-fix bug was on the right
+      side of this diagram: timer ticks kept firing after Stop, eating the still-
+      growing-thin context and dropping pitches. Now they stop when there's
+      nothing new to chew on.
+    </div>
+  </div>
+
+  <h2 style="margin-top:64px">The whole mental model in one sentence</h2>
+  <div class="card" style="font-size:15px;line-height:1.7">
+    Transcription is one model, pitch-boundary detection is another, and the
+    analyzer's job is to be a careful editor of an existing list — not the sole
+    author of it. Locked pitches (admin-edited) and now <em>all</em> unlocked
+    pitches are protected from being dropped; the worst the analyzer can do is
+    propose a bad new entry, which the admin's Delete button (with its tombstone)
+    cleans up. And if anything goes sideways, the snapshot ring buffer means
+    Undo gets you back.
+  </div>
+
+  <div class="footer">
+    Generated for Buildday Poll · see <code>lib/analyzer.ts</code>, <code>lib/store.ts</code>,
+    <code>app/api/transcript/route.ts</code> for the actual code.
+  </div>
+</main>
+</body>
+</html>

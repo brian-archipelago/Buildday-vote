@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  -webkit-tap-highlight-color: transparent;
+  /* canvas-confetti appends a fixed-positioned overlay canvas to body; with
+     wide spreads it can briefly push the document past viewport width and
+     flash a horizontal scrollbar (most visible on the display screen during
+     the per-vote confetti). Locking horizontal overflow here is harmless --
+     no surface in the app needs to scroll sideways -- and avoids the flash. */
+  overflow-x: hidden;
+}
+
+/* Brand-tinted aurora: navy base with primary blue + mint glows. The mint
+   is intentionally restrained per brand guidelines (accent, not background). */
+.bg-aurora {
+  background-image:
+    radial-gradient(1200px 800px at 10% 10%, rgba(56, 245, 163, 0.16), transparent 60%),
+    radial-gradient(1000px 700px at 90% 20%, rgba(46, 104, 255, 0.32), transparent 60%),
+    radial-gradient(1100px 900px at 50% 100%, rgba(91, 138, 255, 0.28), transparent 60%),
+    linear-gradient(135deg, #103468 0%, #1B2D50 55%, #0a1a36 100%);
+  background-size: 200% 200%;
+  animation: gradient 18s ease infinite;
+}
+
+.bar-fill {
+  width: 0%;
+  animation: bar-grow 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes bar-grow {
+  from { width: 0%; }
+  to   { width: var(--tw-bar, 0%); }
+}
+
+.pulse-dot::before {
+  content: "";
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 9999px;
+  background: #F43F5E;
+  margin-right: 0.5rem;
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.35); opacity: 0.55; }
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed;
+}
+.btn-primary {
+  @apply btn bg-brand-blue text-white shadow-lg shadow-brand-blue/30 hover:bg-[#4D7FFF];
+}
+.btn-accent {
+  @apply btn bg-brand-mint text-brand-navy shadow-lg shadow-brand-mint/30 hover:bg-[#5AFFB6];
+}
+.btn-ghost {
+  @apply btn bg-white/5 text-white/90 hover:bg-white/10 border border-white/10;
+}
+.btn-danger {
+  @apply btn bg-brand-danger/85 text-white hover:bg-brand-danger;
+}
+.card {
+  @apply rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-4;
+}
+.input {
+  @apply w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-brand-blue/60 focus:ring-2 focus:ring-brand-blue/20;
+}
+
+/* --- Live voter twinkles on the display --- */
+
+/* Card-level glow halo. Opacity is set inline via --glow-strength so it
+   stacks: more concurrent voter clicks => brighter glow. Mint + primary blue
+   keeps energy on-brand without leaning fuchsia/violet. */
+.twinkle-glow {
+  position: absolute;
+  inset: -6px;
+  border-radius: 1.25rem;
+  pointer-events: none;
+  opacity: var(--glow-strength, 0);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(56, 245, 163, 0.55) 0%,
+    rgba(46, 104, 255, 0.35) 35%,
+    rgba(91, 138, 255, 0.0) 75%
+  );
+  filter: blur(14px);
+  transition: opacity 240ms ease-out;
+  z-index: 0;
+}
+
+/* Per-event flash pulse over the card. Plays once per twinkle. */
+.twinkle-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  animation: twinkle-flash 1100ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.twinkle-flash.select {
+  background: radial-gradient(
+    ellipse at 50% 60%,
+    rgba(56, 245, 163, 0.45),
+    rgba(46, 104, 255, 0.35) 35%,
+    transparent 75%
+  );
+}
+.twinkle-flash.deselect {
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(148, 163, 184, 0.22),
+    transparent 70%
+  );
+}
+@keyframes twinkle-flash {
+  0%   { opacity: 0; transform: scale(0.97); }
+  10%  { opacity: 1; transform: scale(1.02); }
+  35%  { opacity: 0.65; }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+/* Individual sparkles -- N spawned per server twinkle event for impact. */
+.twinkle-sparkle {
+  position: absolute;
+  left: var(--x, 50%);
+  top: 60%;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  margin-top: -12px;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 2;
+  filter: blur(0.5px);
+  animation: twinkle-rise 2400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+.twinkle-sparkle.select {
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(56, 245, 163, 0.95) 25%,
+    rgba(46, 104, 255, 0.85) 55%,
+    rgba(46, 104, 255, 0) 75%
+  );
+  box-shadow:
+    0 0 28px 8px rgba(56, 245, 163, 0.55),
+    0 0 60px 14px rgba(46, 104, 255, 0.35);
+}
+.twinkle-sparkle.deselect {
+  background: radial-gradient(
+    circle,
+    rgba(226, 232, 240, 0.95) 0%,
+    rgba(148, 163, 184, 0.75) 45%,
+    rgba(148, 163, 184, 0) 70%
+  );
+  box-shadow: 0 0 18px 4px rgba(148, 163, 184, 0.45);
+  animation-name: twinkle-fall;
+}
+
+/* Fast peak (12%), hold (25%), slow decay -- so each particle reads as
+   "burst of light" rather than a quick blink. */
+@keyframes twinkle-rise {
+  0%   { transform: translate(0, 0) scale(0.3); opacity: 0; }
+  12%  { transform: translate(0, -18px) scale(1.35); opacity: 1; }
+  25%  { transform: translate(0, -32px) scale(1.15); opacity: 0.95; }
+  60%  { transform: translate(0, -90px) scale(0.9); opacity: 0.45; }
+  100% { transform: translate(0, -160px) scale(0.4); opacity: 0; }
+}
+@keyframes twinkle-fall {
+  0%   { transform: translate(0, 0) scale(0.3); opacity: 0; }
+  12%  { transform: translate(0, 14px) scale(1.1); opacity: 0.85; }
+  100% { transform: translate(0, 90px) scale(0.4); opacity: 0; }
+}
+
+/* Small "kick" pulse that scales the whole card briefly when a twinkle
+   lands. Subtle on its own; reads as energy when stacked. */
+.twinkle-kick {
+  animation: twinkle-kick 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes twinkle-kick {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.018); }
+  100% { transform: scale(1); }
+}

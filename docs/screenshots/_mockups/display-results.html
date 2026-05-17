@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Display — results</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body { width: 1920px; height: 1080px; overflow: hidden; }
+  .frame {
+    width: 1920px; height: 1080px;
+    padding: 56px 56px 40px;
+    display: flex; flex-direction: column;
+  }
+  header.top { text-align: center; }
+  .eyebrow { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.4em; color: rgba(255,255,255,0.6); }
+  .title { font-size: 5.2rem; font-weight: 700; line-height: 1.1; margin: 12px 0 0; }
+  .submeta { color: rgba(255,255,255,0.5); margin-top: 10px; font-size: 0.95rem; }
+
+  .results {
+    flex: 1;
+    display: flex; flex-direction: column; justify-content: center;
+    margin-top: 30px;
+  }
+  ul.list { list-style: none; padding: 0; margin: 0 auto; width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 20px; }
+
+  .row {
+    border-radius: 1rem;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.10);
+    padding: 22px 26px;
+    display: flex; align-items: center; gap: 20px;
+  }
+  .row.winner {
+    box-shadow: 0 0 0 2px rgba(56, 245, 163, 0.7), 0 30px 60px -20px rgba(56, 245, 163, 0.4);
+  }
+
+  .rank-tile {
+    flex: 0 0 auto;
+    width: 64px; height: 64px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.10);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.2rem; font-weight: 800;
+  }
+  .rank-tile.winner {
+    background: linear-gradient(135deg, var(--brand-mint), var(--brand-teal));
+    color: var(--brand-navy);
+  }
+
+  .row-body { flex: 1; min-width: 0; }
+  .row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; }
+  .pitch-title { font-size: 1.75rem; font-weight: 700; font-family: "Space Grotesk", "Inter", sans-serif; }
+  .count-block { text-align: right; }
+  .count-n { font-size: 2.2rem; font-weight: 800; font-family: "Space Grotesk", "Inter", sans-serif; }
+  .count-l { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.2em; color: rgba(255,255,255,0.55); }
+  .pitch-desc { color: rgba(255,255,255,0.6); font-size: 0.95rem; margin-top: 2px; }
+  .bar-track { height: 12px; background: rgba(255,255,255,0.10); border-radius: 9999px; overflow: hidden; margin-top: 14px; }
+  .bar-fill { height: 100%; border-radius: 9999px; background: linear-gradient(to right, var(--brand-blue), var(--brand-subtle-blue), var(--brand-mint)); }
+</style>
+</head>
+<body class="bg-aurora">
+  <div class="bg-aurora">
+    <div class="frame">
+      <header class="top">
+        <div class="eyebrow">And the crowd says…</div>
+        <h1 class="title font-display gradient-text">Results</h1>
+        <div class="submeta">18 ballots · multi-select · top 3 · 3 revealed</div>
+      </header>
+
+      <div class="results">
+        <ul class="list">
+          <li class="row winner">
+            <div class="rank-tile winner">🏆</div>
+            <div class="row-body">
+              <div class="row-head">
+                <div class="pitch-title">Recipe Witch</div>
+                <div class="count-block">
+                  <div class="count-n">14</div>
+                  <div class="count-l">78%</div>
+                </div>
+              </div>
+              <div class="pitch-desc">Stares at your fridge through your phone and writes tonight's dinner.</div>
+              <div class="bar-track"><div class="bar-fill" style="width:100%;"></div></div>
+            </div>
+          </li>
+
+          <li class="row">
+            <div class="rank-tile">2</div>
+            <div class="row-body">
+              <div class="row-head">
+                <div class="pitch-title">AutoMech</div>
+                <div class="count-block">
+                  <div class="count-n">11</div>
+                  <div class="count-l">61%</div>
+                </div>
+              </div>
+              <div class="pitch-desc">AI mechanic that diagnoses your car from a recording of the engine.</div>
+              <div class="bar-track"><div class="bar-fill" style="width:78%;"></div></div>
+            </div>
+          </li>
+
+          <li class="row">
+            <div class="rank-tile">3</div>
+            <div class="row-body">
+              <div class="row-head">
+                <div class="pitch-title">ChromaForge</div>
+                <div class="count-block">
+                  <div class="count-n">9</div>
+                  <div class="count-l">50%</div>
+                </div>
+              </div>
+              <div class="pitch-desc">Make any product photo match your brand palette in one shot.</div>
+              <div class="bar-track"><div class="bar-fill" style="width:64%;"></div></div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

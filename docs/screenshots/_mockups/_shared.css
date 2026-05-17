@@ -1,0 +1,99 @@
+/* Shared mockup styling — mirrors app/globals.css + tailwind.config.ts */
+:root {
+  --brand-blue: #2E68FF;
+  --brand-mint: #38F5A3;
+  --brand-navy: #1B2D50;
+  --brand-deep-navy: #103468;
+  --brand-teal: #00BDA5;
+  --brand-subtle-blue: #5B8AFF;
+  --brand-slate: #475569;
+  --brand-slate-light: #64748B;
+  --brand-danger: #F43F5E;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #fff;
+  background: var(--brand-deep-navy);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.bg-aurora {
+  min-height: 100vh;
+  background-image:
+    radial-gradient(1200px 800px at 10% 10%, rgba(56, 245, 163, 0.16), transparent 60%),
+    radial-gradient(1000px 700px at 90% 20%, rgba(46, 104, 255, 0.32), transparent 60%),
+    radial-gradient(1100px 900px at 50% 100%, rgba(91, 138, 255, 0.28), transparent 60%),
+    linear-gradient(135deg, #103468 0%, #1B2D50 55%, #0a1a36 100%);
+}
+
+.card {
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  padding: 1rem;
+}
+
+.gradient-text {
+  background: linear-gradient(to right, var(--brand-mint), #fff, var(--brand-subtle-blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.uppercase-eyebrow {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  color: rgba(255, 255, 255, 0.50);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  color: #fff;
+}
+.btn-primary {
+  background: var(--brand-blue);
+  box-shadow: 0 10px 30px -10px rgba(46, 104, 255, 0.6);
+}
+.btn-accent {
+  background: var(--brand-mint);
+  color: var(--brand-navy);
+  box-shadow: 0 10px 30px -10px rgba(56, 245, 163, 0.6);
+}
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+.btn-danger {
+  background: rgba(244, 63, 94, 0.85);
+}
+
+.pulse-dot::before {
+  content: "";
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 9999px;
+  background: var(--brand-danger);
+  margin-right: 0.5rem;
+}
+.pulse-dot.mint::before { background: var(--brand-mint); }

@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Display — voting open</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body { width: 1920px; height: 1080px; overflow: hidden; }
+  .frame {
+    width: 1920px; height: 1080px;
+    padding: 40px 56px;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 24px;
+  }
+  header.top { display: flex; align-items: flex-start; justify-content: space-between; }
+  .title { font-size: 4.5rem; font-weight: 700; line-height: 1.1; margin: 6px 0 0; }
+  .meta-right { text-align: right; }
+  .pulse-live { color: #FCA5A5; font-weight: 700; font-size: 1.2rem; }
+  .counts { color: rgba(255,255,255,0.55); font-size: 0.95rem; margin-top: 4px; }
+
+  .body {
+    display: grid;
+    grid-template-columns: 8fr 4fr;
+    gap: 32px;
+    min-height: 0;
+  }
+  ul.pitches { list-style: none; margin: 0; padding: 0 8px 0 0; display: flex; flex-direction: column; gap: 16px; }
+  .pitch {
+    display: flex; gap: 18px; align-items: flex-start;
+    border-radius: 1.25rem;
+    padding: 22px 26px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    backdrop-filter: blur(8px);
+  }
+  .pitch.current {
+    box-shadow: 0 0 0 2px rgba(46, 104, 255, 0.6), 0 30px 60px -20px rgba(46, 104, 255, 0.35);
+  }
+  .emoji-tile {
+    flex: 0 0 auto;
+    width: 64px; height: 64px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(46, 104, 255, 0.30), rgba(16, 52, 104, 0.40));
+    border: 1px solid rgba(255,255,255,0.10);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.2rem;
+  }
+  .pitch .index { font-size: 0.85rem; font-weight: 700; color: rgba(255,255,255,0.4); letter-spacing: 0.02em; }
+  .pitch .name { font-size: 2rem; font-weight: 700; line-height: 1.15; }
+  .pitch .desc { color: rgba(255,255,255,0.72); font-size: 1.1rem; margin-top: 4px; }
+  .live-pill { color: var(--brand-mint); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; }
+  .name-row { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+
+  .aside { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+  .qr-card { display: flex; flex-direction: column; align-items: center; padding: 28px; }
+  .qr-img {
+    width: 380px; height: 380px; border-radius: 14px;
+    background:
+      conic-gradient(from 0deg at 50% 50%, #103468 0deg, #103468 360deg);
+    /* Faux QR: grid of squares */
+    background-color: #fff;
+    background-image:
+      linear-gradient(#103468 50%, transparent 50%),
+      linear-gradient(90deg, #103468 50%, transparent 50%);
+    background-size: 22px 22px;
+    background-position: 0 0, 0 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .qr-img::before, .qr-img::after, .qr-img > span {
+    content: ""; position: absolute; width: 70px; height: 70px;
+    border: 12px solid #103468; border-radius: 8px;
+    background: #fff;
+  }
+  .qr-img::before { top: 18px; left: 18px; }
+  .qr-img::after { top: 18px; right: 18px; }
+  .qr-img > span { bottom: 18px; left: 18px; }
+  .qr-img > .center-blob {
+    inset: auto; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 110px; height: 110px; border: none; border-radius: 18px;
+    background: linear-gradient(135deg, #2E68FF, #103468);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 1.1rem; letter-spacing: 0.1em;
+  }
+  .qr-url { color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-top: 8px; word-break: break-all; }
+
+  .ballot-counter { text-align: center; }
+  .ballot-counter .n { font-size: 4.5rem; font-weight: 800; }
+  .ballot-counter .l { letter-spacing: 0.3em; text-transform: uppercase; font-size: 0.72rem; color: rgba(255,255,255,0.6); margin-top: 4px; }
+
+  footer.bottom { text-align: center; color: rgba(255,255,255,0.30); font-size: 0.75rem; }
+</style>
+</head>
+<body class="bg-aurora">
+  <div class="bg-aurora">
+    <div class="frame">
+      <header class="top">
+        <div>
+          <div class="uppercase-eyebrow">AI Hackathon · Live Poll</div>
+          <h1 class="title font-display gradient-text">Vote now!</h1>
+        </div>
+        <div class="meta-right">
+          <div class="pulse-live pulse-dot">LIVE MIC</div>
+          <div class="counts">7 pitches · 18 votes</div>
+        </div>
+      </header>
+
+      <div class="body">
+        <section style="overflow:hidden;">
+          <ul class="pitches">
+            <li class="pitch">
+              <div class="emoji-tile">🔧</div>
+              <div style="flex:1; min-width:0;">
+                <div class="name-row">
+                  <div class="index">#1</div>
+                  <div class="name font-display">AutoMech</div>
+                </div>
+                <div class="desc">AI mechanic that diagnoses your car from a recording of the engine.</div>
+              </div>
+            </li>
+            <li class="pitch">
+              <div class="emoji-tile">📷</div>
+              <div style="flex:1; min-width:0;">
+                <div class="name-row">
+                  <div class="index">#2</div>
+                  <div class="name font-display">PitchLens</div>
+                </div>
+                <div class="desc">Camera-first investor deck builder for founders who don't know PowerPoint.</div>
+              </div>
+            </li>
+            <li class="pitch">
+              <div class="emoji-tile">🥘</div>
+              <div style="flex:1; min-width:0;">
+                <div class="name-row">
+                  <div class="index">#3</div>
+                  <div class="name font-display">Recipe Witch</div>
+                </div>
+                <div class="desc">Stares at your fridge through your phone and writes tonight's dinner.</div>
+              </div>
+            </li>
+            <li class="pitch">
+              <div class="emoji-tile">🦡</div>
+              <div style="flex:1; min-width:0;">
+                <div class="name-row">
+                  <div class="index">#4</div>
+                  <div class="name font-display">CodeFerret</div>
+                </div>
+                <div class="desc">Asks your repo a question, sniffs out the answer in plain English.</div>
+              </div>
+            </li>
+            <li class="pitch">
+              <div class="emoji-tile">🎨</div>
+              <div style="flex:1; min-width:0;">
+                <div class="name-row">
+                  <div class="index">#5</div>
+                  <div class="name font-display">Studio Spirits</div>
+                </div>
+                <div class="desc">Lets a designer summon a stylistic ghost of any 20th-century illustrator.</div>
+              </div>
+            </li>
+            <li class="pitch current">
+              <div class="emoji-tile">✨</div>
+              <div style="flex:1; min-width:0;">
+                <div class="name-row">
+                  <div class="index">#6</div>
+                  <div class="name font-display">ChromaForge</div>
+                  <span class="live-pill pulse-dot mint">live</span>
+                </div>
+                <div class="desc">Make any product photo match your brand palette in one shot.</div>
+              </div>
+            </li>
+            <li class="pitch">
+              <div class="emoji-tile">📬</div>
+              <div style="flex:1; min-width:0;">
+                <div class="name-row">
+                  <div class="index">#7</div>
+                  <div class="name font-display">Hello Loop</div>
+                </div>
+                <div class="desc">Closes your inbox loops by drafting the replies you've been dreading.</div>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+        <aside class="aside">
+          <div class="card qr-card">
+            <div class="uppercase-eyebrow">Scan to vote</div>
+            <div class="qr-img" style="margin-top:14px;">
+              <span></span>
+              <span class="center-blob">VOTE</span>
+            </div>
+            <div class="qr-url">https://buildday-vote.up.railway.app/vote</div>
+          </div>
+          <div class="ballot-counter">
+            <div class="n font-display">18</div>
+            <div class="l">ballots in</div>
+          </div>
+        </aside>
+      </div>
+
+      <footer class="bottom">
+        Powered by OpenAI Realtime + GPT-5.4-mini · pitches summarized from live audio
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

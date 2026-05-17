@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Vote — phone</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body { width: 390px; }
+  .frame {
+    width: 390px; min-height: 844px;
+    padding: 16px 20px 120px;
+    position: relative;
+  }
+  header.top { padding-top: 20px; padding-bottom: 4px; }
+  .eyebrow { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.3em; color: rgba(255,255,255,0.5); }
+  .title { font-size: 2rem; font-weight: 800; margin: 6px 0 0; line-height: 1.15; }
+  .subtitle { color: rgba(255,255,255,0.6); font-size: 0.88rem; margin-top: 8px; }
+
+  ul.list { list-style: none; padding: 0; margin: 16px 0 0; display: flex; flex-direction: column; gap: 10px; }
+
+  .vrow {
+    border-radius: 1rem;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.10);
+    padding: 12px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .vrow.checked {
+    background: linear-gradient(to right, rgba(56,245,163,0.20), rgba(46,104,255,0.30));
+    border-color: rgba(56,245,163,0.50);
+  }
+  .vrow .num {
+    flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px;
+    background: rgba(255,255,255,0.10);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800;
+  }
+  .vrow .body { flex: 1; min-width: 0; }
+  .vrow .name { font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
+  .live-pill { color: var(--brand-mint); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+  .vrow .desc { color: rgba(255,255,255,0.7); font-size: 0.82rem; margin-top: 2px; line-height: 1.35; }
+  .checkbox {
+    flex: 0 0 auto; width: 24px; height: 24px; border-radius: 6px;
+    border: 2px solid rgba(255,255,255,0.30);
+    background: rgba(255,255,255,0.05);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .checkbox.checked {
+    background: var(--brand-mint);
+    border-color: var(--brand-mint);
+  }
+  .check {
+    width: 14px; height: 14px;
+  }
+
+  .bottom-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    padding: 14px;
+    background: linear-gradient(to top, var(--brand-deep-navy) 50%, rgba(16,52,104,0.85), transparent);
+  }
+  .submit-btn {
+    width: 100%; padding: 16px;
+    background: var(--brand-blue); border-radius: 0.75rem;
+    color: #fff; font-weight: 700; font-size: 1.05rem;
+    box-shadow: 0 16px 36px -16px rgba(46,104,255,0.6);
+    text-align: center;
+  }
+</style>
+</head>
+<body class="bg-aurora">
+  <div class="bg-aurora">
+    <div class="frame">
+      <header class="top">
+        <div class="eyebrow">Live Hackathon Vote</div>
+        <h1 class="title font-display gradient-text">Pick your favorites</h1>
+        <p class="subtitle">Tap as many as you like. You can change your choices until voting closes.</p>
+      </header>
+
+      <ul class="list">
+        <li class="vrow">
+          <div class="num">1</div>
+          <div class="body">
+            <div class="name">AutoMech</div>
+            <div class="desc">AI mechanic that diagnoses your car from a recording of the engine.</div>
+          </div>
+          <div class="checkbox"></div>
+        </li>
+
+        <li class="vrow checked">
+          <div class="num">2</div>
+          <div class="body">
+            <div class="name">PitchLens</div>
+            <div class="desc">Camera-first investor deck builder for founders who don't know PowerPoint.</div>
+          </div>
+          <div class="checkbox checked">
+            <svg class="check" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4 4 10-10" stroke="#103468" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </li>
+
+        <li class="vrow checked">
+          <div class="num">3</div>
+          <div class="body">
+            <div class="name">Recipe Witch</div>
+            <div class="desc">Stares at your fridge through your phone and writes tonight's dinner.</div>
+          </div>
+          <div class="checkbox checked">
+            <svg class="check" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4 4 10-10" stroke="#103468" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </li>
+
+        <li class="vrow">
+          <div class="num">4</div>
+          <div class="body">
+            <div class="name">CodeFerret</div>
+            <div class="desc">Asks your repo a question, sniffs out the answer in plain English.</div>
+          </div>
+          <div class="checkbox"></div>
+        </li>
+
+        <li class="vrow">
+          <div class="num">5</div>
+          <div class="body">
+            <div class="name">Studio Spirits</div>
+            <div class="desc">Lets a designer summon a stylistic ghost of any 20th-century illustrator.</div>
+          </div>
+          <div class="checkbox"></div>
+        </li>
+
+        <li class="vrow checked">
+          <div class="num">6</div>
+          <div class="body">
+            <div class="name">
+              ChromaForge
+              <span class="live-pill pulse-dot mint">live</span>
+            </div>
+            <div class="desc">Make any product photo match your brand palette in one shot.</div>
+          </div>
+          <div class="checkbox checked">
+            <svg class="check" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4 4 10-10" stroke="#103468" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </li>
+      </ul>
+
+      <div class="bottom-bar">
+        <div class="submit-btn">Submit 3 picks</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
