@@ -1,0 +1,126 @@
+# Archipelago Consulting Ltd. - automated security scanning
+# Control reference: ACL-ISMS-10 clause 4.7, ACL-ISMS-13 clause 4.2
+# Maintained centrally by the Information Security Owner. Do not edit per repository.
+
+name: Security scan
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  schedule:
+    - cron: '17 11 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: Secret scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          VER=$(curl -fsSL https://api.github.com/repos/gitleaks/gitleaks/releases/latest | jq -r .tag_name)
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/${VER}/gitleaks_${VER#v}_linux_x64.tar.gz" -o gitleaks.tgz
+          tar -xzf gitleaks.tgz gitleaks
+          sudo mv gitleaks /usr/local/bin/
+          gitleaks version
+
+      - name: Scan full commit history for secrets
+        run: |
+          gitleaks detect --source . --redact --no-banner \
+            --report-format sarif --report-path gitleaks.sarif --exit-code 1
+
+      - name: Upload secret scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks.sarif
+          if-no-files-found: ignore
+          retention-days: 90
+
+  dependencies:
+    name: Dependency vulnerability scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install osv-scanner
+        run: |
+          set -euo pipefail
+          VER=$(curl -fsSL https://api.github.com/repos/google/osv-scanner/releases/latest | jq -r .tag_name)
+          curl -fsSL "https://github.com/google/osv-scanner/releases/download/${VER}/osv-scanner_linux_amd64" -o osv-scanner
+          chmod +x osv-scanner
+          sudo mv osv-scanner /usr/local/bin/
+          osv-scanner --version
+
+      - name: Scan dependencies against the OSV database
+        run: |
+          set -uo pipefail
+          if osv-scanner scan source --help >/dev/null 2>&1; then
+            osv-scanner scan source --recursive --format json --output osv.json .
+          else
+            osv-scanner --recursive --format json --output osv.json .
+          fi
+          if [ ! -s osv.json ]; then
+            echo "No dependency manifests found in this repository."
+            exit 0
+          fi
+          jq -r '[.results[]?.packages[]? | .package.name as $n | .vulnerabilities[]? | ((.database_specific.severity // "UNKNOWN") | ascii_upcase) + "  " + .id + "  " + $n] | if length == 0 then ["No known vulnerabilities."] else . end | .[]' osv.json
+          WORST=$(jq '[.results[]?.packages[]?.vulnerabilities[]? | ((.database_specific.severity // "UNKNOWN") | ascii_upcase) | if . == "CRITICAL" then 4 elif . == "HIGH" then 3 elif . == "MODERATE" or . == "MEDIUM" then 2 elif . == "LOW" then 1 else 0 end] | max // 0' osv.json)
+          TOTAL=$(jq '[.results[]?.packages[]?.vulnerabilities[]?] | length' osv.json)
+          echo "Total findings: ${TOTAL}. Highest severity rank: ${WORST} where 4 is critical and 3 is high."
+          if [ "${WORST}" -ge 3 ]; then
+            echo "::error::Critical or High severity dependency vulnerability present. Merge is blocked under ACL-ISMS-13 clause 4.2.1."
+            exit 1
+          fi
+
+      - name: Upload dependency scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osv-report
+          path: osv.json
+          if-no-files-found: ignore
+          retention-days: 90
+
+  sast:
+    name: Static application security testing
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Semgrep
+        run: pip install --quiet semgrep
+
+      - name: Run Semgrep security rulesets
+        run: |
+          semgrep scan --config p/security-audit --config p/secrets --config p/owasp-top-ten \
+            --metrics=off --error --sarif --output semgrep.sarif \
+            --exclude node_modules --exclude dist --exclude build --exclude .next
+
+      - name: Upload SAST report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-report
+          path: semgrep.sarif
+          if-no-files-found: ignore
+          retention-days: 90
