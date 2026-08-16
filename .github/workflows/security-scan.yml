@@ -39,15 +39,22 @@ jobs:
 
       - name: Scan full commit history for secrets
         run: |
-          gitleaks detect --source . --redact --no-banner \
-            --report-format sarif --report-path gitleaks.sarif --exit-code 1
+          RC=0
+          gitleaks detect --source . --redact --no-banner --verbose \
+            --report-format json --report-path gitleaks.json || RC=$?
+          if [ -s gitleaks.json ]; then
+            echo "--- findings (values redacted) ---"
+            jq -r '.[] | "\(.RuleID)\t\(.File):\(.StartLine)\tcommit \(.Commit[0:8])\t\(.Date)"' gitleaks.json | sort -u
+            echo "--- total: $(jq length gitleaks.json) ---"
+          fi
+          exit $RC
 
       - name: Upload secret scan report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gitleaks-report
-          path: gitleaks.sarif
+          path: gitleaks.json
           if-no-files-found: ignore
           retention-days: 90
 
@@ -68,14 +75,19 @@ jobs:
 
       - name: Scan dependencies against the OSV database
         run: |
-          set -uo pipefail
+          RC=0
           if osv-scanner scan source --help >/dev/null 2>&1; then
-            osv-scanner scan source --recursive --format json --output osv.json .
+            osv-scanner scan source --recursive --format json --output-file osv.json . || RC=$?
           else
-            osv-scanner --recursive --format json --output osv.json .
+            osv-scanner --recursive --format json --output-file osv.json . || RC=$?
+          fi
+          # osv-scanner exit codes: 0 clean, 1 vulnerabilities found, 128 no package sources.
+          if [ "$RC" -eq 128 ]; then
+            echo "No dependency manifests found in this repository. Nothing to scan."
+            exit 0
           fi
           if [ ! -s osv.json ]; then
-            echo "No dependency manifests found in this repository."
+            echo "Scanner produced no output (exit ${RC})."
             exit 0
           fi
           jq -r '[.results[]?.packages[]? | .package.name as $n | .vulnerabilities[]? | ((.database_specific.severity // "UNKNOWN") | ascii_upcase) + "  " + .id + "  " + $n] | if length == 0 then ["No known vulnerabilities."] else . end | .[]' osv.json
